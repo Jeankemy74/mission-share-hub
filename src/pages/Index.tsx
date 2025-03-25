@@ -4,6 +4,7 @@ import Layout from '../components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { FileText, Users, Calendar, Share2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const features = [
   {
@@ -29,6 +30,8 @@ const features = [
 ];
 
 const Index = () => {
+  const { user } = useAuth();
+  
   return (
     <Layout>
       {/* Hero Section */}
@@ -43,12 +46,20 @@ const Index = () => {
               de créer des missions, d'attribuer des membres et de partager des documents.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" className="rounded-full">
-                <Link to="/dashboard">Accéder au tableau de bord</Link>
-              </Button>
-              <Button asChild variant="outline" size="lg" className="rounded-full">
-                <Link to="/missions">Voir les missions</Link>
-              </Button>
+              {user ? (
+                <Button asChild size="lg" className="rounded-full">
+                  <Link to="/dashboard">Accéder au tableau de bord</Link>
+                </Button>
+              ) : (
+                <>
+                  <Button asChild size="lg" className="rounded-full">
+                    <Link to="/login">Se connecter</Link>
+                  </Button>
+                  <Button asChild variant="outline" size="lg" className="rounded-full">
+                    <Link to="/register">S'inscrire</Link>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -96,9 +107,15 @@ const Index = () => {
               Rejoignez la plateforme et améliorez la collaboration de votre équipe dès aujourd'hui.
             </p>
             <div className="mt-8">
-              <Button asChild size="lg" className="rounded-full">
-                <Link to="/dashboard">Accéder à la plateforme</Link>
-              </Button>
+              {user ? (
+                <Button asChild size="lg" className="rounded-full">
+                  <Link to="/dashboard">Accéder au tableau de bord</Link>
+                </Button>
+              ) : (
+                <Button asChild size="lg" className="rounded-full">
+                  <Link to="/login">Se connecter</Link>
+                </Button>
+              )}
             </div>
           </div>
         </div>

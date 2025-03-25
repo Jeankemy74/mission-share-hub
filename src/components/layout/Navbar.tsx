@@ -1,12 +1,26 @@
 
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, User, BellRing } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, BellRing, User, LogOut } from 'lucide-react';
 import Logo from '../ui/Logo';
+import { useAuth } from '../../contexts/AuthContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "@/components/ui/use-toast";
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   
   const links = [
     { name: 'Accueil', path: '/' },
@@ -20,6 +34,35 @@ const Navbar: React.FC = () => {
     if (path === '/' && location.pathname === '/') return true;
     if (path !== '/' && location.pathname.startsWith(path)) return true;
     return false;
+  };
+
+  const handleLogout = () => {
+    logout();
+    toast({
+      title: "Déconnexion réussie",
+      description: "Vous avez été déconnecté avec succès.",
+    });
+    navigate('/');
+  };
+
+  // Get initials from user name for avatar fallback
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part.charAt(0).toUpperCase())
+      .join('')
+      .substring(0, 2);
+  };
+
+  // Get role label in French
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'admin': return 'Administrateur';
+      case 'mission_chief': return 'Chef de mission';
+      case 'member': return 'Membre';
+      case 'external': return 'Utilisateur externe';
+      default: return role;
+    }
   };
 
   return (
@@ -51,12 +94,68 @@ const Navbar: React.FC = () => {
           
           {/* User actions */}
           <div className="hidden md:flex items-center space-x-4">
-            <button className="p-2 rounded-full text-foreground/80 hover:text-foreground transition-all-200">
-              <BellRing size={20} />
-            </button>
-            <button className="p-2 rounded-full text-foreground/80 hover:text-foreground transition-all-200">
-              <User size={20} />
-            </button>
+            {user ? (
+              <>
+                <button className="p-2 rounded-full text-foreground/80 hover:text-foreground transition-all-200">
+                  <BellRing size={20} />
+                </button>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="focus:outline-none">
+                    <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
+                      <AvatarImage src={user.avatar} alt={user.name} />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {getInitials(user.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <div className="flex items-center space-x-2 p-2">
+                      <Avatar>
+                        <AvatarImage src={user.avatar} alt={user.name} />
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          {getInitials(user.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col space-y-0.5">
+                        <p className="text-sm font-medium">{user.name}</p>
+                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                      </div>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel>
+                      Rôle: <Badge variant="outline" className="ml-1">{getRoleLabel(user.role)}</Badge>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => navigate('/dashboard')}>
+                      Tableau de bord
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => navigate('/profile')}>
+                      Profil
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => navigate('/settings')}>
+                      Paramètres
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onSelect={handleLogout}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <LogOut size={16} className="mr-2" />
+                      Déconnexion
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 transition-colors"
+              >
+                <User size={16} className="mr-2" />
+                Connexion
+              </Link>
+            )}
           </div>
           
           {/* Mobile menu button */}
@@ -89,14 +188,38 @@ const Navbar: React.FC = () => {
             </Link>
           ))}
           
-          <div className="flex space-x-4 px-3 py-2">
-            <button className="p-2 rounded-full text-foreground/80 hover:text-foreground transition-all-200">
-              <BellRing size={20} />
-            </button>
-            <button className="p-2 rounded-full text-foreground/80 hover:text-foreground transition-all-200">
-              <User size={20} />
-            </button>
-          </div>
+          {user ? (
+            <div className="border-t border-border mt-2 pt-2">
+              <div className="px-3 py-2 flex items-center space-x-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarFallback className="bg-primary text-primary-foreground">
+                    {getInitials(user.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full mt-2 px-3 py-2 text-left rounded-md text-base font-medium text-destructive hover:bg-muted transition-colors"
+              >
+                <LogOut size={16} className="mr-2 inline-block" />
+                Déconnexion
+              </button>
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              className="block px-3 py-2 mt-2 text-center rounded-md text-base font-medium text-white bg-primary hover:bg-primary/90 transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <User size={16} className="mr-2 inline-block" />
+              Connexion
+            </Link>
+          )}
         </div>
       </div>
     </nav>
