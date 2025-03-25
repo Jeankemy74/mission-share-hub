@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import MissionCard from '../components/dashboard/MissionCard';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ const allMissions = [
 const Missions = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const navigate = useNavigate();
   
   const filteredMissions = allMissions.filter((mission) => {
     const matchesSearch = mission.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -37,7 +39,7 @@ const Missions = () => {
               <h1 className="text-3xl font-bold">Missions</h1>
               <p className="text-muted-foreground mt-2">Gérez vos missions et suivez leur progression</p>
             </div>
-            <Button className="flex items-center">
+            <Button className="flex items-center" onClick={() => navigate('/missions/create')}>
               <Plus size={16} className="mr-2" />
               Nouvelle mission
             </Button>
@@ -105,7 +107,7 @@ const Missions = () => {
             <p className="mt-2 text-muted-foreground">
               Modifiez vos critères de recherche ou créez une nouvelle mission.
             </p>
-            <Button className="mt-6">
+            <Button className="mt-6" onClick={() => navigate('/missions/create')}>
               <Plus size={16} className="mr-2" />
               Nouvelle mission
             </Button>

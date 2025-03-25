@@ -13,6 +13,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Missions from "./pages/Missions";
+import MissionDetail from "./pages/MissionDetail";
+import CreateMission from "./pages/CreateMission";
 import Documents from "./pages/Documents";
 import Calendar from "./pages/Calendar";
 import NotFound from "./pages/NotFound";
@@ -41,6 +43,16 @@ const App = () => (
             <Route path="/missions" element={
               <ProtectedRoute>
                 <Missions />
+              </ProtectedRoute>
+            } />
+            <Route path="/missions/:id" element={
+              <ProtectedRoute>
+                <MissionDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/missions/create" element={
+              <ProtectedRoute>
+                <CreateMission />
               </ProtectedRoute>
             } />
             <Route path="/documents" element={
