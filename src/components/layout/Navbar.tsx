@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, BellRing, User, LogOut } from 'lucide-react';
 import Logo from '../ui/Logo';
 import { useAuth } from '../../contexts/AuthContext';
+import ThemeToggle from '../ui/theme-toggle';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -96,6 +96,7 @@ const Navbar: React.FC = () => {
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <>
+                <ThemeToggle />
                 <button className="p-2 rounded-full text-foreground/80 hover:text-foreground transition-all-200">
                   <BellRing size={20} />
                 </button>
@@ -190,17 +191,20 @@ const Navbar: React.FC = () => {
           
           {user ? (
             <div className="border-t border-border mt-2 pt-2">
-              <div className="px-3 py-2 flex items-center space-x-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {getInitials(user.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">{user.email}</p>
+              <div className="flex items-center justify-between px-3 py-2">
+                <div className="flex items-center space-x-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user.avatar} alt={user.name} />
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      {getInitials(user.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-sm font-medium">{user.name}</p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                  </div>
                 </div>
+                <ThemeToggle />
               </div>
               <button
                 onClick={handleLogout}
