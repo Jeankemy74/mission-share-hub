@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
@@ -11,7 +10,7 @@ import { ArrowLeft, Calendar, Clock, FileText, MessageSquare, Users, AlertCircle
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { toast } from '@/components/ui/sonner';
+import { Toaster } from '@/components/ui/sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { format } from 'date-fns';
@@ -30,7 +29,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon as CalendarPickerIcon } from "@radix-ui/react-icons";
+import { CalendarIcon } from "@radix-ui/react-icons";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 
@@ -138,6 +137,30 @@ const statusLabels = {
   draft: 'Brouillon',
 };
 
+interface Mission {
+  id: string;
+  title: string;
+  description: string;
+  status: 'active' | 'completed' | 'draft';
+  members: {
+    id: string;
+    name: string;
+    role: 'admin' | 'mission_chief' | 'member' | 'external';
+    avatar: string;
+  }[];
+  startDate: string;
+  progress: number;
+  documents: {
+    id: string;
+    name: string;
+    type: string;
+    size: string;
+    updatedAt: string;
+    author: string;
+  }[];
+  dueDate?: string;
+}
+
 const MissionDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -151,7 +174,7 @@ const MissionDetail = () => {
   const { getMissionAccess, hasFullSystemAccess } = useAccessControl();
   
   // Get mission data based on ID
-  const mission = missionData[id as keyof typeof missionData];
+  const mission = missionData[id as keyof typeof missionData] as Mission;
   
   if (!mission) {
     return (
@@ -210,7 +233,9 @@ const MissionDetail = () => {
   
   // Set initial date when component mounts
   React.useEffect(() => {
-    setSelectedDate(parseDueDate());
+    if (mission.dueDate) {
+      setSelectedDate(parseDueDate());
+    }
   }, [mission.dueDate]);
   
   const handleUpdateDueDate = () => {
@@ -269,7 +294,7 @@ const MissionDetail = () => {
                 <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[mission.status as keyof typeof statusColors]}`}>
                   {statusLabels[mission.status as keyof typeof statusLabels]}
                 </span>
-                {'dueDate' in mission && mission.dueDate && (
+                {mission.dueDate && (
                   <div className="ml-4 text-sm text-muted-foreground flex items-center">
                     <Calendar size={14} className="mr-1" />
                     <span>Échéance: {mission.dueDate}</span>
@@ -297,7 +322,7 @@ const MissionDetail = () => {
                                   variant="outline"
                                   className="w-full justify-start text-left font-normal"
                                 >
-                                  <CalendarPickerIcon className="mr-2 h-4 w-4" />
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
                                   {selectedDate ? (
                                     format(selectedDate, 'PPP', { locale: fr })
                                   ) : (
@@ -365,7 +390,7 @@ const MissionDetail = () => {
                         <h3 className="font-medium mb-2">Progression</h3>
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-sm font-medium">{mission.progress}%</span>
-                          {'dueDate' in mission && mission.dueDate && (
+                          {mission.dueDate && (
                             <span className="text-sm text-muted-foreground">
                               Échéance: {mission.dueDate}
                             </span>
@@ -384,7 +409,7 @@ const MissionDetail = () => {
                               <p className="text-sm text-muted-foreground">{mission.startDate}</p>
                             </div>
                           </div>
-                          {'dueDate' in mission && mission.dueDate && (
+                          {mission.dueDate && (
                             <div className="flex items-center">
                               <Clock size={16} className="mr-2 text-muted-foreground" />
                               <div>
