@@ -179,7 +179,7 @@ const MissionDetail = () => {
                 <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[mission.status as keyof typeof statusColors]}`}>
                   {statusLabels[mission.status as keyof typeof statusLabels]}
                 </span>
-                {mission.dueDate && (
+                {'dueDate' in mission && mission.dueDate && (
                   <span className="ml-4 text-sm text-muted-foreground flex items-center">
                     <Calendar size={14} className="mr-1" />
                     Échéance: {mission.dueDate}
@@ -221,7 +221,7 @@ const MissionDetail = () => {
                         <h3 className="font-medium mb-2">Progression</h3>
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-sm font-medium">{mission.progress}%</span>
-                          {mission.dueDate && (
+                          {'dueDate' in mission && mission.dueDate && (
                             <span className="text-sm text-muted-foreground">
                               Échéance: {mission.dueDate}
                             </span>
@@ -240,7 +240,7 @@ const MissionDetail = () => {
                               <p className="text-sm text-muted-foreground">{mission.startDate}</p>
                             </div>
                           </div>
-                          {mission.dueDate && (
+                          {'dueDate' in mission && mission.dueDate && (
                             <div className="flex items-center">
                               <Clock size={16} className="mr-2 text-muted-foreground" />
                               <div>
