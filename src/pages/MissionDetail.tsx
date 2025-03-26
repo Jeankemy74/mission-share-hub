@@ -7,10 +7,32 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Clock, FileText, MessageSquare, Users } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, FileText, MessageSquare, Users, AlertCircle, PenLine } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAccessControl } from '@/hooks/useAccessControl';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarIcon as CalendarPickerIcon } from "@radix-ui/react-icons";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
 
 // Sample data - in a real app, this would come from an API or context
 const missionData = {
@@ -120,7 +142,13 @@ const MissionDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isDateDialogOpen, setIsDateDialogOpen] = useState(false);
+  
+  // Access control hook to manage permissions
+  const { getMissionAccess, hasFullSystemAccess } = useAccessControl();
   
   // Get mission data based on ID
   const mission = missionData[id as keyof typeof missionData];
@@ -142,6 +170,68 @@ const MissionDetail = () => {
       </Layout>
     );
   }
+  
+  // Determine user access permissions for this mission
+  const access = getMissionAccess(mission.members);
+  
+  // If user doesn't have access and is not an admin, show access denied
+  if (!access.canView && !hasFullSystemAccess()) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-12 bg-card rounded-lg card-shadow animate-fade-in">
+            <AlertCircle size={48} className="mx-auto text-destructive" />
+            <h2 className="text-2xl font-bold mb-4 mt-4">Accès refusé</h2>
+            <p className="text-muted-foreground mb-6">
+              Vous n'avez pas accès à cette mission. Veuillez contacter un administrateur ou un chef de mission.
+            </p>
+            <Button onClick={() => navigate('/missions')}>
+              Retour à la liste des missions
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+  
+  // Convert string date to Date object for the calendar
+  const parseDueDate = () => {
+    if (!mission.dueDate) return null;
+    
+    // Simple parsing for the example format "28 juin 2024"
+    const parts = mission.dueDate.split(' ');
+    const day = parseInt(parts[0]);
+    const monthNames = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+    const month = monthNames.indexOf(parts[1]);
+    const year = parseInt(parts[2]);
+    
+    return new Date(year, month, day);
+  };
+  
+  // Set initial date when component mounts
+  React.useEffect(() => {
+    setSelectedDate(parseDueDate());
+  }, [mission.dueDate]);
+  
+  const handleUpdateDueDate = () => {
+    if (!selectedDate) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez sélectionner une date",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Here you would update the mission date in a real app
+    // For this example, we'll just show a toast
+    toast({
+      title: "Date d'échéance mise à jour",
+      description: `La date d'échéance a été modifiée au ${format(selectedDate, 'dd MMMM yyyy', { locale: fr })}.`,
+    });
+    
+    setIsDateDialogOpen(false);
+  };
   
   const handleAddDocument = () => {
     toast({
@@ -180,15 +270,69 @@ const MissionDetail = () => {
                   {statusLabels[mission.status as keyof typeof statusLabels]}
                 </span>
                 {'dueDate' in mission && mission.dueDate && (
-                  <span className="ml-4 text-sm text-muted-foreground flex items-center">
+                  <div className="ml-4 text-sm text-muted-foreground flex items-center">
                     <Calendar size={14} className="mr-1" />
-                    Échéance: {mission.dueDate}
-                  </span>
+                    <span>Échéance: {mission.dueDate}</span>
+                    
+                    {/* Due date modification button for chiefs and admins */}
+                    {access.canModifyDueDate && mission.status !== 'completed' && (
+                      <Dialog open={isDateDialogOpen} onOpenChange={setIsDateDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="ml-1 h-5 w-5">
+                            <PenLine size={12} />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Modifier la date d'échéance</DialogTitle>
+                            <DialogDescription>
+                              Changez la date d'échéance pour cette mission.
+                            </DialogDescription>
+                          </DialogHeader>
+                          
+                          <div className="py-4">
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className="w-full justify-start text-left font-normal"
+                                >
+                                  <CalendarPickerIcon className="mr-2 h-4 w-4" />
+                                  {selectedDate ? (
+                                    format(selectedDate, 'PPP', { locale: fr })
+                                  ) : (
+                                    <span>Sélectionner une date</span>
+                                  )}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <CalendarPicker
+                                  mode="single"
+                                  selected={selectedDate}
+                                  onSelect={setSelectedDate}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                          
+                          <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsDateDialogOpen(false)}>
+                              Annuler
+                            </Button>
+                            <Button onClick={handleUpdateDueDate}>
+                              Mettre à jour
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
             
-            {mission.status !== 'completed' && (
+            {mission.status !== 'completed' && access.canEdit && (
               <Button>
                 {mission.status === 'draft' ? 'Démarrer la mission' : 'Modifier la mission'}
               </Button>
@@ -245,7 +389,19 @@ const MissionDetail = () => {
                               <Clock size={16} className="mr-2 text-muted-foreground" />
                               <div>
                                 <p className="text-sm font-medium">Date d'échéance</p>
-                                <p className="text-sm text-muted-foreground">{mission.dueDate}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {mission.dueDate}
+                                  {access.canModifyDueDate && mission.status !== 'completed' && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="ml-1 h-5 w-5"
+                                      onClick={() => setIsDateDialogOpen(true)}
+                                    >
+                                      <PenLine size={12} />
+                                    </Button>
+                                  )}
+                                </p>
                               </div>
                             </div>
                           )}
@@ -321,7 +477,7 @@ const MissionDetail = () => {
                         </div>
                       ))}
                     </div>
-                    {mission.status !== 'completed' && (
+                    {mission.status !== 'completed' && access.canManageMembers && (
                       <Button 
                         variant="outline" 
                         className="w-full mt-4"
@@ -347,7 +503,7 @@ const MissionDetail = () => {
                       Tous les documents de la mission
                     </CardDescription>
                   </div>
-                  {mission.status !== 'completed' && (
+                  {mission.status !== 'completed' && access.canEdit && (
                     <Button onClick={handleAddDocument}>
                       <FileText size={16} className="mr-2" />
                       Ajouter un document
@@ -371,7 +527,7 @@ const MissionDetail = () => {
                           <Button variant="outline" size="sm">
                             Télécharger
                           </Button>
-                          {mission.status !== 'completed' && (
+                          {mission.status !== 'completed' && access.canEdit && (
                             <Button variant="ghost" size="sm">
                               Gérer
                             </Button>
@@ -387,7 +543,7 @@ const MissionDetail = () => {
                     <p className="mt-2 text-sm text-muted-foreground">
                       Cette mission ne contient pas encore de documents.
                     </p>
-                    {mission.status !== 'completed' && (
+                    {mission.status !== 'completed' && access.canEdit && (
                       <Button 
                         className="mt-4"
                         onClick={handleAddDocument}
@@ -411,7 +567,7 @@ const MissionDetail = () => {
                       Membres de la mission
                     </CardDescription>
                   </div>
-                  {mission.status !== 'completed' && (
+                  {mission.status !== 'completed' && access.canManageMembers && (
                     <Button onClick={handleAddMember}>
                       <Users size={16} className="mr-2" />
                       Ajouter un membre
@@ -437,7 +593,7 @@ const MissionDetail = () => {
                             member.role === 'member' ? 'Membre' : 'Externe'}
                         </Badge>
                       </div>
-                      {mission.status !== 'completed' && member.role !== 'mission_chief' && (
+                      {mission.status !== 'completed' && access.canManageMembers && member.role !== 'mission_chief' && (
                         <Button variant="ghost" size="sm">
                           Gérer
                         </Button>

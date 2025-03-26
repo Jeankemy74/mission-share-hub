@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import Layout from '../components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, FileText, FileImage, FilePlus, FolderOpen, Download, MoreVertical, Trash2, Users } from 'lucide-react';
+import { Search, Filter, FileText, FileImage, FilePlus, FolderOpen, Download, MoreVertical, Trash2, Users, AlertCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,8 +11,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from '@/contexts/AuthContext';
+import { useAccessControl } from '@/hooks/useAccessControl';
 
-// Sample data
+// Sample missions data for cross-checking permissions
+const missions = [
+  { id: '1', title: 'Audit financier du ministère de l\'Éducation', memberIds: ['1', '2', '3'] },
+  { id: '2', title: 'Évaluation des politiques de santé publique', memberIds: ['2', '3', '4'] },
+  { id: '3', title: 'Revue des dépenses du projet d\'infrastructure', memberIds: ['1', '2'] },
+  { id: '4', title: 'Analyse du programme de développement durable', memberIds: ['2', '3', '4'] },
+  { id: '5', title: 'Audit de conformité des marchés publics', memberIds: ['1', '2', '3', '4'] }
+];
+
+// Sample data for documents
 const documents = [
   { 
     id: '1', 
@@ -21,6 +32,7 @@ const documents = [
     size: '4.2 MB', 
     updatedAt: '28 mai 2024', 
     mission: 'Audit financier du ministère de l\'Éducation',
+    missionId: '1',
     sharedWith: 4
   },
   { 
@@ -89,11 +101,28 @@ const getFileIcon = (type: string) => {
 
 const Documents = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const { user } = useAuth();
+  const { hasFullSystemAccess } = useAccessControl();
   
-  const filteredDocuments = documents.filter((doc) => 
-    doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doc.mission.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Get the missions that the user is a member of
+  const userMissionIds = missions
+    .filter(mission => hasFullSystemAccess() || (user && mission.memberIds.includes(user.id)))
+    .map(mission => mission.id);
+  
+  // Filter documents based on search query and user's mission membership
+  const filteredDocuments = documents.filter((doc) => {
+    const matchesSearch = 
+      doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      doc.mission.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Admin can see all documents
+    if (hasFullSystemAccess()) {
+      return matchesSearch;
+    }
+    
+    // Regular users can only see documents from their missions
+    return matchesSearch && userMissionIds.includes(doc.missionId);
+  });
   
   return (
     <Layout>
@@ -196,11 +225,23 @@ const Documents = () => {
           {/* Empty State */}
           {filteredDocuments.length === 0 && (
             <div className="text-center py-12">
-              <Filter size={48} className="mx-auto text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-medium">Aucun document trouvé</h3>
-              <p className="mt-2 text-muted-foreground">
-                Modifiez vos critères de recherche ou ajoutez un nouveau document.
-              </p>
+              {searchQuery ? (
+                <>
+                  <Filter size={48} className="mx-auto text-muted-foreground" />
+                  <h3 className="mt-4 text-lg font-medium">Aucun document trouvé</h3>
+                  <p className="mt-2 text-muted-foreground">
+                    Modifiez vos critères de recherche ou ajoutez un nouveau document.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <AlertCircle size={48} className="mx-auto text-muted-foreground" />
+                  <h3 className="mt-4 text-lg font-medium">Aucun document disponible</h3>
+                  <p className="mt-2 text-muted-foreground">
+                    Vous n'avez pas accès à des documents ou aucun document n'existe encore.
+                  </p>
+                </>
+              )}
               <Button className="mt-6">
                 <FilePlus size={16} className="mr-2" />
                 Ajouter un document
