@@ -39,10 +39,10 @@ const Index = () => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center animate-fade-in">
             <h1 className="text-4xl md:text-5xl font-bold">
-              Simplifiez la gestion de vos missions
+              Simplification de la gestion de nos missions
             </h1>
             <p className="mt-6 text-lg text-muted-foreground">
-              Une plateforme collaborative pour l'Inspection Générale des Finances permettant 
+              Une plateforme collaborative nous permettant 
               de créer des missions, d'attribuer des membres et de partager des documents.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
